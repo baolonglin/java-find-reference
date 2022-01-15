@@ -3,11 +3,6 @@ package org.javacs;
 import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.*;
 
-import java.nio.file.Paths;
-import org.javacs.lsp.DidChangeTextDocumentParams;
-import org.javacs.lsp.DidCloseTextDocumentParams;
-import org.javacs.lsp.DidOpenTextDocumentParams;
-import org.javacs.lsp.TextDocumentContentChangeEvent;
 import org.junit.Test;
 
 public class StringSearchTest {
@@ -75,53 +70,6 @@ public class StringSearchTest {
         assertTrue(StringSearch.matchesTitleCase("Prefix AutocompleteBetweenLines", "ABetweenLines"));
         assertTrue(StringSearch.matchesTitleCase("Prefix UPPERFooBar", "fb"));
         assertFalse(StringSearch.matchesTitleCase("Foo Bar", "fb"));
-    }
-
-    @Test
-    public void searchLargeFile() {
-        var largeFile = Paths.get(FindResource.uri("/org/javacs/example/LargeFile.java"));
-        assertTrue(StringSearch.containsWordMatching(largeFile, "removeMethodBodies"));
-        assertFalse(StringSearch.containsWordMatching(largeFile, "removeMethodBodiez"));
-    }
-
-    @Test
-    public void searchSmallFile() {
-        var smallFile = Paths.get(FindResource.uri("/org/javacs/example/Goto.java"));
-        assertTrue(StringSearch.containsWordMatching(smallFile, "nonDefaultConstructor"));
-        assertFalse(StringSearch.containsWordMatching(smallFile, "removeMethodBodies"));
-    }
-
-    @Test
-    public void searchOpenFile() {
-        // Open file
-        var smallFile = Paths.get(FindResource.uri("/org/javacs/example/Goto.java"));
-        var open = new DidOpenTextDocumentParams();
-        open.textDocument.text = FileStore.contents(smallFile);
-        open.textDocument.uri = smallFile.toUri();
-        FileStore.open(open);
-        // Edit file
-        var change = new DidChangeTextDocumentParams();
-        change.textDocument.uri = smallFile.toUri();
-        var evt = new TextDocumentContentChangeEvent();
-        evt.text = "package org.javacs.example; class Foo { }";
-        change.contentChanges.add(evt);
-        FileStore.change(change);
-        // Check that Parser sees the edits
-        try {
-            assertTrue(StringSearch.containsWordMatching(smallFile, "Foo"));
-        } finally {
-            // Close file
-            var close = new DidCloseTextDocumentParams();
-            close.textDocument.uri = smallFile.toUri();
-            FileStore.close(close);
-        }
-    }
-
-    @Test
-    public void findAutocompleteBetweenLines() {
-        var rel = Paths.get("src", "org", "javacs", "example", "AutocompleteBetweenLines.java");
-        var file = LanguageServerFixture.DEFAULT_WORKSPACE_ROOT.resolve(rel);
-        assertTrue(StringSearch.containsWordMatching(file, "ABetweenLines"));
     }
 
     @Test

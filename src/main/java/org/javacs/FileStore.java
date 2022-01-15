@@ -1,17 +1,13 @@
 package org.javacs;
 
+import javax.lang.model.element.TypeElement;
 import java.io.*;
 import java.net.URI;
 import java.nio.file.*;
-import java.nio.file.attribute.*;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.time.Instant;
 import java.util.*;
 import java.util.logging.Logger;
-import javax.lang.model.element.TypeElement;
-import org.javacs.lsp.DidChangeTextDocumentParams;
-import org.javacs.lsp.DidCloseTextDocumentParams;
-import org.javacs.lsp.DidOpenTextDocumentParams;
-import org.javacs.lsp.TextDocumentContentChangeEvent;
 
 public class FileStore {
 
@@ -204,36 +200,6 @@ public class FileStore {
         }
     }
 
-    static void open(DidOpenTextDocumentParams params) {
-        if (!isJavaFile(params.textDocument.uri)) return;
-        var document = params.textDocument;
-        var file = Paths.get(document.uri);
-        activeDocuments.put(file, new VersionedContent(document.text, document.version));
-    }
-
-    static void change(DidChangeTextDocumentParams params) {
-        if (!isJavaFile(params.textDocument.uri)) return;
-        var document = params.textDocument;
-        var file = Paths.get(document.uri);
-        var existing = activeDocuments.get(file);
-        if (document.version <= existing.version) {
-            LOG.warning("Ignored change with version " + document.version + " <= " + existing.version);
-            return;
-        }
-        var newText = existing.content;
-        for (var change : params.contentChanges) {
-            if (change.range == null) newText = change.text;
-            else newText = patch(newText, change);
-        }
-        activeDocuments.put(file, new VersionedContent(newText, document.version));
-    }
-
-    static void close(DidCloseTextDocumentParams params) {
-        if (!isJavaFile(params.textDocument.uri)) return;
-        var file = Paths.get(params.textDocument.uri);
-        activeDocuments.remove(file);
-    }
-
     static Set<Path> activeDocuments() {
         return activeDocuments.keySet();
     }
@@ -305,43 +271,6 @@ public class FileStore {
             cursor++;
         }
         return cursor + column;
-    }
-
-    private static String patch(String sourceText, TextDocumentContentChangeEvent change) {
-        try {
-            var range = change.range;
-            var reader = new BufferedReader(new StringReader(sourceText));
-            var writer = new StringWriter();
-
-            // Skip unchanged lines
-            int line = 0;
-
-            while (line < range.start.line) {
-                writer.write(reader.readLine() + '\n');
-                line++;
-            }
-
-            // Skip unchanged chars
-            for (int character = 0; character < range.start.character; character++) {
-                writer.write(reader.read());
-            }
-
-            // Write replacement text
-            writer.write(change.text);
-
-            // Skip replaced text
-            reader.skip(change.rangeLength);
-
-            // Write remaining text
-            while (true) {
-                int next = reader.read();
-
-                if (next == -1) return writer.toString();
-                else writer.write(next);
-            }
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
     }
 
     static boolean isJavaFile(Path file) {

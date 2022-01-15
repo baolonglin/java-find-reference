@@ -1,12 +1,12 @@
 package org.javacs;
 
+import javax.lang.model.element.Modifier;
+import javax.lang.model.element.NestingKind;
+import javax.tools.JavaFileObject;
 import java.io.*;
 import java.net.URI;
 import java.nio.file.Path;
 import java.time.Instant;
-import javax.lang.model.element.Modifier;
-import javax.lang.model.element.NestingKind;
-import javax.tools.JavaFileObject;
 
 public class SourceFileObject implements JavaFileObject {
     /** path is the absolute path to this file on disk */

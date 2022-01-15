@@ -25,11 +25,6 @@ public class IncrementalCompileTest implements TaskListener, DiagnosticListener<
     final Path foo = src.resolve("foo/bar/Foo.java");
     final List<String> options = List.of("-sourcepath", src.toString(), "-verbose", "-proc:none");
 
-    @Before
-    public void setLogFormat() {
-        Main.setRootFormat();
-    }
-
     @Test
     public void freshTask() {
         var fileManager = compiler.getStandardFileManager(this, null, Charset.defaultCharset());

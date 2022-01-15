@@ -1,12 +1,15 @@
 package org.javacs;
 
+import javax.tools.Diagnostic;
+import javax.tools.JavaFileObject;
+import javax.tools.StandardLocation;
 import java.io.IOException;
-import java.nio.file.*;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
-import javax.tools.*;
 
 class JavaCompilerService implements CompilerProvider {
     // Not modifiable! If you want to edit these, you need to create a new instance
@@ -22,13 +25,13 @@ class JavaCompilerService implements CompilerProvider {
     final SourceFileManager fileManager;
 
     JavaCompilerService(Set<Path> classPath, Set<Path> docPath, Set<String> addExports) {
-        System.err.println("Class path:");
+        LOG.warning("Class path:");
         for (var p : classPath) {
-            System.err.println("  " + p);
+            LOG.warning("  " + p);
         }
-        System.err.println("Doc path:");
+        LOG.warning("Doc path:");
         for (var p : docPath) {
-            System.err.println("  " + p);
+            LOG.warning("  " + p);
         }
         // classPath can't actually be modified, because JavaCompiler remembers it from task to task
         this.classPath = Collections.unmodifiableSet(classPath);
@@ -154,8 +157,8 @@ class JavaCompilerService implements CompilerProvider {
         try (var lines = FileStore.lines(file)) {
             for (var line = lines.readLine(); line != null; line = lines.readLine()) {
                 // If we reach a class declaration, stop looking for imports
-                // TODO This could be a little more specific
-                if (line.contains("class")) break;
+                // TODO This could be a little more specific, static import is not matched also
+                if (line.contains(" class ")) break;
                 // import foo.bar.Doh;
                 var matchesClass = importClass.matcher(line);
                 if (matchesClass.matches()) {

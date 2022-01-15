@@ -1,4 +1,5 @@
 package org.javacs;
+import org.javacs.guava.ClassPath;
 
 import java.io.File;
 import java.io.IOException;
@@ -12,7 +13,6 @@ import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.logging.Logger;
-import org.javacs.guava.ClassPath;
 
 class ScanClassPath {
 
@@ -125,7 +125,7 @@ class ScanClassPath {
                     var relative = moduleRoot.relativize(classFile).toString();
                     if (relative.endsWith(".class") && !relative.contains("$")) {
                         var trim = relative.substring(0, relative.length() - ".class".length());
-                        var qualifiedName = trim.replace(File.separatorChar, '.');
+                        var qualifiedName = trim.replace('/', '.').replace(File.separatorChar, '.');
                         classes.add(qualifiedName);
                     }
                 }

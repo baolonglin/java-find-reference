@@ -3,16 +3,21 @@ package org.javacs;
 import com.sun.source.doctree.DocCommentTree;
 import com.sun.source.tree.*;
 import com.sun.source.util.*;
+
+import javax.lang.model.element.Element;
+import javax.lang.model.element.Modifier;
+import javax.lang.model.element.Name;
+import javax.lang.model.element.TypeElement;
+import javax.tools.JavaCompiler;
+import javax.tools.JavaFileObject;
 import java.io.IOException;
-import java.nio.file.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.*;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
-import javax.lang.model.element.*;
-import javax.tools.JavaCompiler;
-import javax.tools.JavaFileObject;
-import org.javacs.lsp.*;
 
 class Parser {
     private static final JavaCompiler COMPILER = ServiceLoader.load(JavaCompiler.class).iterator().next();

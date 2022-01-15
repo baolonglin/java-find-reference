@@ -1,37 +1,48 @@
 package org.javacs;
 
-import java.util.Arrays;
-import java.util.logging.Level;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.nio.file.Path;
 import java.util.logging.Logger;
-import org.javacs.lsp.*;
+
+import com.google.gson.Gson;
 
 public class Main {
-    private static final Logger LOG = Logger.getLogger("main");
 
-    public static void setRootFormat() {
-        var root = Logger.getLogger("");
+    static class Method {
+        String name;
 
-        for (var h : root.getHandlers()) {
-            h.setFormatter(new LogFormat());
+        public Method(String name) {
+            this.name = name;
         }
     }
+    private static final Logger LOG = Logger.getLogger("main");
 
     public static void main(String[] args) {
-        boolean quiet = Arrays.stream(args).anyMatch("--quiet"::equals);
-
-        if (quiet) {
-            LOG.setLevel(Level.OFF);
+        var options = new MainArgs(args);
+        if (options.workspace.isEmpty() || options.help) {
+            options.printUsage();
+            return;
         }
 
-        try {
-            // Logger.getLogger("").addHandler(new FileHandler("javacs.%u.log", false));
-            setRootFormat();
+        JavaLanguageServer languageServer = new JavaLanguageServer(Path.of(options.workspace));
+        var leafMethods = languageServer.findLeafReference(options.specialMethods,
+                options.depth);
+        LOG.info(String.format("Find candidate leaf methods: %d", leafMethods.size()));
+        leafMethods.forEach(LOG::info);
 
-            LSP.connect(JavaLanguageServer::new, System.in, System.out);
-        } catch (Throwable t) {
-            LOG.log(Level.SEVERE, t.getMessage(), t);
+        if (leafMethods.isEmpty()) {
+            return;
+        }
 
-            System.exit(1);
+        if (!options.outputJsonFile.isEmpty()) {
+            var methods = leafMethods.stream().map(m -> new Method(m)).toArray(String[]::new);
+            Gson gson = new Gson();
+            try {            
+                gson.toJson(methods, new FileWriter(options.outputJsonFile));
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 }

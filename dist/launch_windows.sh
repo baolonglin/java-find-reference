@@ -9,5 +9,5 @@ JLINK_VM_OPTIONS="\
 --add-exports jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED \
 --add-opens jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED"
 DIR=`dirname $0`
-CLASSPATH_OPTIONS="-classpath $DIR/classpath/gson-2.8.5.jar;$DIR/classpath/protobuf-java-3.9.1.jar;$DIR/classpath/java-language-server.jar"
-$DIR/windows/bin/java $JLINK_VM_OPTIONS $CLASSPATH_OPTIONS $@
+CLASSPATH_OPTIONS="-classpath $DIR/classpath/gson-2.8.9.jar;$DIR/classpath/commons-cli-1.5.0.jar;$DIR/classpath/java-find-reference.jar"
+java $JLINK_VM_OPTIONS $CLASSPATH_OPTIONS $@

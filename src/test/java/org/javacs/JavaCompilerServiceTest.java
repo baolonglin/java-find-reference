@@ -8,9 +8,6 @@ import java.util.*;
 import org.junit.*;
 
 public class JavaCompilerServiceTest {
-    static {
-        Main.setRootFormat();
-    }
 
     private JavaCompilerService compiler =
             new JavaCompilerService(Collections.emptySet(), Collections.emptySet(), Collections.emptySet());

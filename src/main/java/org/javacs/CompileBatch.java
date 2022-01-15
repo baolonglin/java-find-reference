@@ -1,15 +1,19 @@
 package org.javacs;
 
-import com.sun.source.tree.*;
-import com.sun.source.util.*;
+import com.sun.source.tree.CompilationUnitTree;
+import com.sun.source.util.JavacTask;
+import com.sun.source.util.Trees;
+
+import javax.lang.model.util.Elements;
+import javax.lang.model.util.Types;
+import javax.tools.Diagnostic;
+import javax.tools.JavaFileObject;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
-import javax.lang.model.util.*;
-import javax.tools.*;
 
 class CompileBatch implements AutoCloseable {
     static final int MAX_COMPLETION_ITEMS = 50;
@@ -66,7 +70,7 @@ class CompileBatch implements AutoCloseable {
         return addFiles;
     }
 
-    private String errorText(javax.tools.Diagnostic<? extends javax.tools.JavaFileObject> err) {
+    private String errorText(Diagnostic<? extends JavaFileObject> err) {
         var file = Paths.get(err.getSource().toUri());
         var contents = FileStore.contents(file);
         var begin = (int) err.getStartPosition();
@@ -74,7 +78,7 @@ class CompileBatch implements AutoCloseable {
         return contents.substring(begin, end);
     }
 
-    private String packageName(javax.tools.Diagnostic<? extends javax.tools.JavaFileObject> err) {
+    private String packageName(Diagnostic<? extends JavaFileObject> err) {
         var file = Paths.get(err.getSource().toUri());
         return FileStore.packageName(file);
     }
@@ -139,7 +143,7 @@ class CompileBatch implements AutoCloseable {
         return list;
     }
 
-    private boolean isValidFileRange(javax.tools.Diagnostic<? extends JavaFileObject> d) {
+    private boolean isValidFileRange(Diagnostic<? extends JavaFileObject> d) {
         return d.getSource().toUri().getScheme().equals("file") && d.getStartPosition() >= 0 && d.getEndPosition() >= 0;
     }
 }

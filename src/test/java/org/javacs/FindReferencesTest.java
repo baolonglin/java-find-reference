@@ -1,24 +1,19 @@
 package org.javacs;
 
 import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
+import static org.hamcrest.MatcherAssert.*;
 
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
-import org.javacs.lsp.*;
 import org.junit.Test;
 
 public class FindReferencesTest {
-    private static final JavaLanguageServer server = LanguageServerFixture.getJavaLanguageServer();
+    private static final JavaLanguageServer server = new JavaLanguageServer(Paths.get("./src/test/examples/maven-project").toAbsolutePath());
 
     protected List<String> items(String file, int row, int column) {
-        var uri = FindResource.uri(file);
-        var params = new ReferenceParams();
-
-        params.textDocument = new TextDocumentIdentifier(uri);
-        params.position = new Position(row - 1, column - 1);
-
-        var locations = server.findReferences(params).orElse(List.of());
+        var position = new FilePosition(FindResource.path(file), row, column);
+        var locations = server.findReferences(position).orElse(List.of());
         var strings = new ArrayList<String>();
         for (var l : locations) {
             var fileName = StringSearch.fileName(l.uri);

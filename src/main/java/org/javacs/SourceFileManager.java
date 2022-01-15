@@ -1,12 +1,14 @@
 package org.javacs;
 
+import javax.tools.*;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.Collection;
+import java.util.ServiceLoader;
+import java.util.Set;
 import java.util.logging.Logger;
-import javax.tools.*;
 
 class SourceFileManager extends ForwardingJavaFileManager<StandardJavaFileManager> {
     SourceFileManager() {

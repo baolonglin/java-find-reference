@@ -1,12 +1,12 @@
 package org.javacs;
 
+import javax.tools.JavaFileObject;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import javax.tools.JavaFileObject;
 
 public interface CompilerProvider {
     Set<String> imports();

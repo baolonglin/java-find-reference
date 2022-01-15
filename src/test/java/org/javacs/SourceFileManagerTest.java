@@ -6,6 +6,7 @@ import static org.junit.Assert.*;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.logging.Logger;
 import javax.tools.*;
@@ -13,8 +14,12 @@ import org.junit.Before;
 import org.junit.Test;
 
 public class SourceFileManagerTest {
-    static final Path src = LanguageServerFixture.DEFAULT_WORKSPACE_ROOT.resolve("src");
-    static final Path classes = LanguageServerFixture.DEFAULT_WORKSPACE_ROOT.resolve("target/classes");
+    static Path mavenProjectSrc() {
+        return Paths.get("src/test/examples/maven-project").normalize();
+    }
+
+    static final Path src = mavenProjectSrc().resolve("src");
+    static final Path classes = mavenProjectSrc().resolve("target/classes");
     final SourceFileManager sourceFileManager = createSourceFileManager();
     final StandardJavaFileManager standardFileManager = createDelegateFileManager();
 
@@ -45,7 +50,7 @@ public class SourceFileManagerTest {
 
     @Before
     public void setWorkspaceRoot() {
-        FileStore.setWorkspaceRoots(Set.of(LanguageServerFixture.DEFAULT_WORKSPACE_ROOT));
+        FileStore.setWorkspaceRoots(Set.of(mavenProjectSrc()));
     }
 
     @Test

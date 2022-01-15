@@ -1,25 +1,14 @@
 package org.javacs;
 
-import com.sun.source.tree.ArrayTypeTree;
-import com.sun.source.tree.ClassTree;
-import com.sun.source.tree.CompilationUnitTree;
-import com.sun.source.tree.IdentifierTree;
-import com.sun.source.tree.MemberSelectTree;
-import com.sun.source.tree.MethodTree;
-import com.sun.source.tree.ParameterizedTypeTree;
-import com.sun.source.tree.PrimitiveTypeTree;
-import com.sun.source.tree.Tree;
-import com.sun.source.tree.VariableTree;
+import com.sun.source.tree.*;
 import com.sun.source.util.TreePath;
 import com.sun.source.util.Trees;
-import java.io.IOException;
-import java.util.regex.Pattern;
+
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
-import org.javacs.lsp.Location;
-import org.javacs.lsp.Position;
-import org.javacs.lsp.Range;
+import java.io.IOException;
+import java.util.regex.Pattern;
 
 public class FindHelper {
 

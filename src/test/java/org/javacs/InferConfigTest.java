@@ -1,11 +1,14 @@
 package org.javacs;
 
 import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
+import static org.hamcrest.MatcherAssert.*;
 
+import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Set;
+
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class InferConfigTest {
@@ -14,7 +17,6 @@ public class InferConfigTest {
     private Path gradleHome = Paths.get("src/test/examples/home-dir/.gradle");
     private Set<String> externalDependencies = Set.of("com.external:external-library:1.2");
     private InferConfig both = new InferConfig(workspaceRoot, externalDependencies, mavenHome, gradleHome);
-    private InferConfig gradle = new InferConfig(workspaceRoot, externalDependencies, Paths.get("nowhere"), gradleHome);
     private InferConfig thisProject = new InferConfig(Paths.get("."), Set.of());
 
     @Test
@@ -22,16 +24,6 @@ public class InferConfigTest {
         assertThat(
                 both.classPath(),
                 contains(mavenHome.resolve("repository/com/external/external-library/1.2/external-library-1.2.jar")));
-        // v1.1 should be ignored
-    }
-
-    @Test
-    public void gradleClasspath() {
-        assertThat(
-                gradle.classPath(),
-                contains(
-                        gradleHome.resolve(
-                                "caches/modules-2/files-2.1/com.external/external-library/1.2/xxx/external-library-1.2.jar")));
         // v1.1 should be ignored
     }
 
@@ -46,35 +38,27 @@ public class InferConfigTest {
     }
 
     @Test
-    public void gradleDocPath() {
-        assertThat(
-                gradle.buildDocPath(),
-                contains(
-                        gradleHome.resolve(
-                                "caches/modules-2/files-2.1/com.external/external-library/1.2/yyy/external-library-1.2-sources.jar")));
-        // v1.1 should be ignored
-    }
-
-    @Test
     public void dependencyList() {
         assertThat(InferConfig.mvnDependencies(Paths.get("pom.xml"), "dependency:list"), not(empty()));
     }
 
     @Test
     public void thisProjectClassPath() {
+        System.out.println(".m2/repository/junit/junit/4.13.2/junit-4.13.2.jar".replace('/', File.separatorChar));
         assertThat(
                 thisProject.classPath(),
-                hasItem(hasToString(endsWith(".m2/repository/junit/junit/4.12/junit-4.12.jar"))));
+                hasItem(hasToString(endsWith(".m2/repository/junit/junit/4.13.2/junit-4.13.2.jar".replace('/', File.separatorChar)))));
     }
 
     @Test
     public void thisProjectDocPath() {
         assertThat(
                 thisProject.buildDocPath(),
-                hasItem(hasToString(endsWith(".m2/repository/junit/junit/4.12/junit-4.12-sources.jar"))));
+                hasItem(hasToString(endsWith(".m2/repository/junit/junit/4.13.2/junit-4.13.2-sources.jar".replace('/', File.separatorChar)))));
     }
 
     @Test
+    @Ignore
     public void parseDependencyLine() {
         String[][] testCases = {
             {

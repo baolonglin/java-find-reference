@@ -1,15 +1,17 @@
 package org.javacs;
 
+import javax.lang.model.element.TypeElement;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.*;
-import java.util.*;
+import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.Objects;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
-import javax.lang.model.element.TypeElement;
 
 // Translated from https://golang.org/src/strings/search.go
 
