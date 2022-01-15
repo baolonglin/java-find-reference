@@ -24,16 +24,5 @@ if [ ! -e dist/mac/bin/java ]; then
     ./scripts/link_mac.sh
 fi
 
-# Compile sources
-if [ ! -e src/main/java/com/google/devtools/build/lib/analysis/AnalysisProtos.java ]; then
-    ./scripts/gen_proto.sh
-fi
 ./scripts/format.sh
 JAVA_HOME=`/usr/libexec/java_home -v 13` mvn package -DskipTests
-
-# Build vsix
-npm run-script vscode:build
-
-code --install-extension build.vsix --force
-
-echo 'Reload VSCode to update extension'
