@@ -2,10 +2,12 @@ package org.javacs;
 
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.Writer;
 import java.nio.file.Path;
 import java.util.logging.Logger;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
 public class Main {
 
@@ -29,18 +31,18 @@ public class Main {
         var leafMethods = languageServer.findLeafReference(options.specialMethods,
                 options.depth);
         LOG.info(String.format("Find candidate leaf methods: %d", leafMethods.size()));
-        leafMethods.forEach(LOG::info);
+        leafMethods.forEach(System.out::println);
 
         if (leafMethods.isEmpty()) {
             return;
         }
 
         if (!options.outputJsonFile.isEmpty()) {
-            var methods = leafMethods.stream().map(m -> new Method(m)).toArray(String[]::new);
-            Gson gson = new Gson();
-            try {            
-                gson.toJson(methods, new FileWriter(options.outputJsonFile));
-            } catch (IOException e) {
+            var methods = leafMethods.stream().map(m -> new Method(m)).toArray(Method[]::new);
+            try (Writer writer = new FileWriter(options.outputJsonFile)) {
+                Gson gson = new GsonBuilder().create();
+                gson.toJson(methods, writer);
+            } catch(IOException e) {
                 throw new RuntimeException(e);
             }
         }

@@ -32,13 +32,15 @@ public class JavaLanguageServer {
     }
 
     public Path getPath(String resourcePath) {
-        if(resourcePath.startsWith("/")) resourcePath = resourcePath.substring(1);
+        if (resourcePath.startsWith("/"))
+            resourcePath = resourcePath.substring(1);
         return this.workspaceRoot.resolve(resourcePath).toAbsolutePath().normalize();
     }
 
     private static boolean isJavaFile(Path file) {
         var name = file.getFileName().toString();
-        return name.endsWith(".java") && !Files.isDirectory(file) && !name.equals("module-info.java");
+        return name.endsWith(".java") && !Files.isDirectory(file)
+                && !name.equals("module-info.java");
     }
 
     private List<FilePosition> getGitModifiedLines() {
@@ -59,18 +61,19 @@ public class JavaLanguageServer {
             int hunkBodyStartLine = 0;
             int hunkBodyLineNum = 0;
             int hunkBodyParseIdx = 0;
-            while ((strLine = br.readLine()) != null)   {
-                if(strLine.startsWith("+++")) {
+            while ((strLine = br.readLine()) != null) {
+                if (strLine.startsWith("+++")) {
                     toFile = getPath(strLine.substring(5));
                     continue;
                 }
                 if (strLine.startsWith("@@")) {
                     if (hunkBodyParseIdx != hunkBodyLineNum) {
-                        throw new RuntimeException("Previous hunk is not parsed success " + strLine);
+                        throw new RuntimeException(
+                                "Previous hunk is not parsed success " + strLine);
                     }
                     hunkBody = true;
                     Matcher m = hunkHeaderPattern.matcher(strLine);
-                    if(m.matches()) {
+                    if (m.matches()) {
                         hunkBodyStartLine = Integer.parseInt(m.group(1));
                         hunkBodyLineNum = 1;
                         if (m.group(2) != null) {
@@ -84,7 +87,7 @@ public class JavaLanguageServer {
                 }
                 if (hunkBody && hunkBodyParseIdx < hunkBodyLineNum) {
                     if (strLine.startsWith("+")) {
-                        if(isJavaFile(toFile)) {
+                        if (!strLine.trim().equals("+") && isJavaFile(toFile)) {
                             int line = hunkBodyStartLine + hunkBodyParseIdx;
                             if (line < 1) {
                                 System.err.println(toFile + " has invalid line");
@@ -93,8 +96,8 @@ public class JavaLanguageServer {
                             modifiedLines.add(new FilePosition(toFile, line, 1));
                         }
                         hunkBodyParseIdx++;
-                    } else if(strLine.startsWith("-")) {
-                        if(isJavaFile(toFile)) {
+                    } else if (strLine.startsWith("-")) {
+                        if (!strLine.trim().equals("-") && isJavaFile(toFile)) {
                             int line = hunkBodyStartLine + hunkBodyParseIdx - 1;
                             if (line < 1) {
                                 System.err.println(toFile + " has invalid line");
@@ -117,24 +120,22 @@ public class JavaLanguageServer {
 
     private Path getGitDiff() {
         String[] command = {
-                "git",
-                "diff",
-                "--relative",
-                "HEAD^",
-                "HEAD"
+                "git", "diff", "--relative", "HEAD^", "HEAD"
         };
         try {
             var output = Files.createTempFile("git-diff", ".txt");
             var process = new ProcessBuilder().command(command).directory(workspaceRoot.toFile())
-                    .redirectError(ProcessBuilder.Redirect.INHERIT).redirectOutput(output.toFile()).start();
+                    .redirectError(ProcessBuilder.Redirect.INHERIT).redirectOutput(output.toFile())
+                    .start();
             var result = process.waitFor();
             if (result != 0) {
                 throw new RuntimeException();
             }
 
             return output;
-        }
-        catch (InterruptedException | IOException e) {
+        } catch (
+                InterruptedException |
+                IOException e) {
             throw new RuntimeException(e);
         }
     }
@@ -143,7 +144,8 @@ public class JavaLanguageServer {
         if (!isJavaFile(position.path)) {
             return Optional.empty();
         }
-        var found = new ReferenceProvider(compiler(), position.path, position.line, position.character).findImplementations();
+        var found = new ReferenceProvider(compiler(), position.path, position.line,
+                position.character).findImplementations();
         if (found.isEmpty()) {
             return Optional.empty();
         }
@@ -154,7 +156,8 @@ public class JavaLanguageServer {
         if (!isJavaFile(position.path)) {
             return Optional.empty();
         }
-        var found = new ReferenceProvider(compiler(), position.path, position.line, position.character).find();
+        var found = new ReferenceProvider(compiler(), position.path, position.line,
+                position.character).find();
         if (found == ReferenceProvider.NOT_SUPPORTED) {
             return Optional.empty();
         }
@@ -163,9 +166,12 @@ public class JavaLanguageServer {
 
     public String getMethod(FilePosition position) {
         try (var task = compiler().compile(position.path)) {
-            var element = NavigationHelper.findMethod(task, position.path, position.line, position.character);
+            var element = NavigationHelper.findMethod(task, position.path, position.line,
+                    position.character);
             if (element == null) {
-                return "Not Found";
+                LOG.info(String.format("Could not find element at (%s:%d:%d)", position.path,
+                        position.line, position.character));
+                return "";
             }
             if (element.getKind() == ElementKind.METHOD) {
                 var parentClass = (TypeElement) element.getEnclosingElement();
@@ -177,7 +183,9 @@ public class JavaLanguageServer {
                 task.close();
                 return className + "::" + memberName;
             } else {
-                return "Not Method";
+                LOG.info(String.format("Not a method at (%s:%d:%d)", position.path, position.line,
+                        position.character));
+                return "";
             }
         }
     }
@@ -190,24 +198,32 @@ public class JavaLanguageServer {
         var parsedMethod = new HashSet<String>();
         for (var line : modifiedLines) {
             var method = getMethod(line);
-            if(!parsedMethod.contains(method) && method.contains("::")) {
-                LOG.info(String.format("Change %s(%d:%d) is owned by %s", line.path.getFileName(), line.line, line.character, method));
+            if (method.isEmpty()) {
+                continue;
+            }
+            if (!parsedMethod.contains(method) && method.contains("::")) {
+                LOG.info(String.format("Change %s(%d:%d) is owned by %s", line.path.getFileName(),
+                        line.line, line.character, method));
                 parsedMethod.add(method);
                 findReferencesR(line, leaves, parsedLocations, depth);
             } else {
-                LOG.info(String.format("Change %s(%d:%d) is parsed before by %s", line.path.getFileName(), line.line, line.character, method));
+                LOG.info(String.format("Change %s(%d:%d) is parsed before by %s",
+                        line.path.getFileName(), line.line, line.character, method));
             }
         }
         var leafMethods = new HashSet<String>();
-        for(var l : leaves) {
+        for (var l : leaves) {
             var method = getMethod(l);
+            if (method.isEmpty()) {
+                continue;
+            }
             if (specialMethods.stream().anyMatch(e -> method.endsWith(e))) {
                 var className = method.substring(0, method.lastIndexOf("::"));
                 LOG.info(String.format("Handle special method %s add %s", method, className));
                 leafMethods.add(className);
                 var inherits = new ArrayList<String>();
                 getAllTypeInherits(className, inherits);
-                if(!inherits.isEmpty()) {
+                if (!inherits.isEmpty()) {
                     leafMethods.addAll(inherits);
                 }
                 LOG.info(String.format("Get inherits for %s(%s)", className, inherits));
@@ -220,8 +236,8 @@ public class JavaLanguageServer {
 
     private void getAllTypeInherits(String className, List<String> inherits) {
         var inheritClasses = NavigationHelper.findTypeImplementations(compiler(), className);
-        for(var c : inheritClasses) {
-            if(inherits.contains(c)) {
+        for (var c : inheritClasses) {
+            if (inherits.contains(c)) {
                 continue;
             }
             inherits.add(c);
@@ -236,8 +252,9 @@ public class JavaLanguageServer {
         return leaves;
     }
 
-    private void findReferencesR(FilePosition position, Set<FilePosition> leaves, Set<Location> parsedLocations, int depth) {
-        if(depth == 0) {
+    private void findReferencesR(FilePosition position, Set<FilePosition> leaves,
+            Set<Location> parsedLocations, int depth) {
+        if (depth == 0) {
             return;
         }
         var locations = findReferences(position).orElse(List.of());
@@ -249,7 +266,8 @@ public class JavaLanguageServer {
                     continue;
                 }
                 parsedLocations.add(l);
-                findReferencesR(new FilePosition(Path.of(l.uri), l.range.start.line + 1, l.range.start.character + 1), leaves, parsedLocations, depth - 1);
+                findReferencesR(new FilePosition(Path.of(l.uri), l.range.start.line + 1,
+                        l.range.start.character + 1), leaves, parsedLocations, depth - 1);
             }
         }
     }
@@ -267,7 +285,8 @@ public class JavaLanguageServer {
     }
 
     private JavaCompilerService createCompiler() {
-        Objects.requireNonNull(workspaceRoot, "Can't create compiler because workspaceRoot has not been initialized");
+        Objects.requireNonNull(workspaceRoot,
+                "Can't create compiler because workspaceRoot has not been initialized");
 
         var externalDependencies = externalDependencies();
         var classPath = classPath();
