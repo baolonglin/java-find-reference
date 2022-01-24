@@ -27,8 +27,8 @@ public class Main {
             return;
         }
 
-        JavaLanguageServer languageServer = new JavaLanguageServer(Path.of(options.workspace));
-        var leafMethods = languageServer.findLeafReference(options.specialMethods,
+        JavaFindReference finder = new JavaFindReference(Path.of(options.workspace));
+        var leafMethods = finder.findLeafReference(options.specialMethods,
                 options.depth);
         LOG.info(String.format("Find candidate leaf methods: %d", leafMethods.size()));
         leafMethods.forEach(System.out::println);

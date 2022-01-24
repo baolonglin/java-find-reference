@@ -9,11 +9,11 @@ import java.util.List;
 import org.junit.Test;
 
 public class FindReferencesTest {
-    private static final JavaLanguageServer server = new JavaLanguageServer(Paths.get("./src/test/examples/maven-project").toAbsolutePath());
+    private static final JavaFindReference finder = new JavaFindReference(Paths.get("./src/test/examples/maven-project").toAbsolutePath());
 
     protected List<String> items(String file, int row, int column) {
         var position = new FilePosition(FindResource.path(file), row, column);
-        var locations = server.findReferences(position).orElse(List.of());
+        var locations = finder.findReferences(position).orElse(List.of());
         var strings = new ArrayList<String>();
         for (var l : locations) {
             var fileName = StringSearch.fileName(l.uri);
