@@ -54,7 +54,7 @@ public class GitDiffParser {
                     toFile = getPath(strLine.substring(5));
                     continue;
                 }
-                if (JavaFindReference.isJavaFile(toFile)) {
+                if (toFile == null || !JavaFindReference.isJavaFile(toFile)) {
                     continue;
                 }
                 if (strLine.startsWith("@@")) {
@@ -131,7 +131,7 @@ public class GitDiffParser {
     }
 
     private Path writeTmpFile(String content) throws IOException {
-        Path tempFile = Files.createTempFile(null, null);
+        Path tempFile = Files.createTempFile("git-diff", ".txt");
         try (BufferedWriter bw = new BufferedWriter(new FileWriter(tempFile.toFile()))) {
             bw.write(content);
         }
