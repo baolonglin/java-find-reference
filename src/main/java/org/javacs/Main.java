@@ -28,7 +28,7 @@ public class Main {
         }
 
         JavaFindReference finder = new JavaFindReference(Path.of(options.workspace));
-        var leafMethods = finder.findLeafReference(options.specialMethods,
+        var leafMethods = finder.findLeafReferences(options.specialMethods,
                 options.depth);
         LOG.info(String.format("Find candidate leaf methods: %d", leafMethods.size()));
         leafMethods.forEach(System.out::println);

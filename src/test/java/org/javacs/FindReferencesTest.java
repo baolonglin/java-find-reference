@@ -5,7 +5,10 @@ import static org.hamcrest.MatcherAssert.*;
 
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
+
 import org.junit.Test;
 
 public class FindReferencesTest {
@@ -21,6 +24,11 @@ public class FindReferencesTest {
             strings.add(String.format("%s(%d)", fileName, line + 1));
         }
         return strings;
+    }
+
+    protected Set<String> leaves(String file, int row, int column) {
+        var positions = Arrays.asList(new FilePosition(FindResource.path(file), row, column));
+        return finder.findLeafReferences(positions, new ArrayList<String>(), -1);
     }
 
     @Test
@@ -50,5 +58,20 @@ public class FindReferencesTest {
         assertThat(items(file, 4, 9), contains("StackedFieldReferences.java(7)"));
         assertThat(items(file, 4, 12), contains("StackedFieldReferences.java(8)"));
         assertThat(items(file, 4, 15), contains("StackedFieldReferences.java(9)"));
+    }
+
+    @Test
+    public void findLeafReferences() {
+        var file = "/org/javacs/example/GotoOther.java";
+        assertThat(leaves(file, 4, 26), contains("org.javacs.example.Goto::test"));
+        assertThat(leaves(file, 5, 19), contains("org.javacs.example.Goto::test"));
+        assertThat(leaves(file, 6, 30), contains("org.javacs.example.Goto::test"));
+        assertThat(leaves(file, 7, 17), contains("org.javacs.example.Goto::test"));
+        assertThat(leaves(file, 8, 1), contains("org.javacs.example.Goto::test"));
+        assertThat(leaves(file, 9, 18), contains("org.javacs.example.Goto::test"));
+        assertThat(leaves(file, 10, 14), contains("org.javacs.example.Goto::test"));
+        assertThat(leaves(file, 11, 1), contains("org.javacs.example.Goto::test"));
+        assertThat(leaves(file, 12, 15), contains("org.javacs.example.Goto::test"));
+        assertThat(leaves(file, 13, 1), contains("org.javacs.example.Goto::test"));
     }
 }

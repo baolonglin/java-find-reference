@@ -61,16 +61,16 @@ public class JavaFindReference {
         return Optional.of(found);
     }
 
-    public String getMethod(FilePosition position) {
+    public AbstractMap.Entry<String, ElementKind> getMethodLevelElement(FilePosition position) {
         try (var task = compiler().compile(position.path)) {
-            var element = NavigationHelper.findMethod(task, position.path, position.line,
+            var element = NavigationHelper.findElementMethodLevel(task, position.path, position.line,
                     position.character);
             if (element == null) {
-                LOG.info(String.format("Could not find element at (%s:%d:%d)", position.path,
-                        position.line, position.character));
-                return "";
+                LOG.info(String.format("Could not find element at (%s:%d:%d)", position.path, position.line,
+                        position.character));
+                return new AbstractMap.SimpleEntry<>("", ElementKind.OTHER);
             }
-            if (element.getKind() == ElementKind.METHOD) {
+            if (element.getKind() == ElementKind.METHOD || element.getKind() == ElementKind.CONSTRUCTOR) {
                 var parentClass = (TypeElement) element.getEnclosingElement();
                 var className = parentClass.getQualifiedName().toString();
                 var memberName = element.getSimpleName().toString();
@@ -78,45 +78,49 @@ public class JavaFindReference {
                     memberName = parentClass.getSimpleName().toString();
                 }
                 task.close();
-                return className + "::" + memberName;
+                return new AbstractMap.SimpleEntry<>(className + "::" + memberName, element.getKind());
+            } else if (element.getKind() == ElementKind.FIELD) {
+                var parentClass = (TypeElement) element.getEnclosingElement();
+                var className = parentClass.getQualifiedName().toString();
+                var memberName = element.getSimpleName().toString();
+                task.close();
+                return new AbstractMap.SimpleEntry<>(className + "::" + memberName, element.getKind());
             } else {
-                LOG.info(String.format("Not a method at (%s:%d:%d)", position.path, position.line,
-                        position.character));
-                return "";
+                LOG.info(String.format("Not a method at (%s:%d:%d)", position.path, position.line, position.character));
+                return new AbstractMap.SimpleEntry<>("", ElementKind.OTHER);
             }
         }
     }
 
-    public Set<String> findLeafReference(List<String> specialMethods, int depth) {
+    public Set<String> findLeafReferences(List<FilePosition> modifiedLines, List<String> specialMethods, int depth) {
         var leaves = new HashSet<FilePosition>();
         var parsedLocations = new HashSet<Location>();
 
-        var modifiedLines = new GitDiffParser(workspaceRoot).parse();
         var parsedMethod = new HashSet<String>();
         for (var line : modifiedLines) {
-            var method = getMethod(line);
-            if (method.isEmpty()) {
+            var element = getMethodLevelElement(line);
+            if (element.getKey().isEmpty()) {
                 continue;
             }
-            if (!parsedMethod.contains(method) && method.contains("::")) {
-                LOG.info(String.format("Change %s(%d:%d) is owned by %s", line.path.getFileName(),
-                        line.line, line.character, method));
-                parsedMethod.add(method);
+            if (!parsedMethod.contains(element.getKey()) && element.getKey().contains("::")) {
+                LOG.info(String.format("Change %s(%d:%d) is owned by %s", line.path.getFileName(), line.line,
+                        line.character, element));
+                parsedMethod.add(element.getKey());
                 findReferencesR(line, leaves, parsedLocations, depth);
             } else {
-                LOG.info(String.format("Change %s(%d:%d) is parsed before by %s",
-                        line.path.getFileName(), line.line, line.character, method));
+                LOG.info(String.format("Change %s(%d:%d) is parsed before by %s", line.path.getFileName(), line.line,
+                        line.character, element));
             }
         }
         var leafMethods = new HashSet<String>();
         for (var l : leaves) {
-            var method = getMethod(l);
-            if (method.isEmpty()) {
+            var element = getMethodLevelElement(l);
+            if (element.getValue() != ElementKind.METHOD) {
                 continue;
             }
-            if (specialMethods.stream().anyMatch(e -> method.endsWith(e))) {
-                var className = method.substring(0, method.lastIndexOf("::"));
-                LOG.info(String.format("Handle special method %s add %s", method, className));
+            if (specialMethods.stream().anyMatch(e -> element.getKey().endsWith(e))) {
+                var className = element.getKey().substring(0, element.getKey().lastIndexOf("::"));
+                LOG.info(String.format("Handle special method %s add %s", element, className));
                 leafMethods.add(className);
                 var inherits = new ArrayList<String>();
                 getAllTypeInherits(className, inherits);
@@ -125,10 +129,15 @@ public class JavaFindReference {
                 }
                 LOG.info(String.format("Get inherits for %s(%s)", className, inherits));
             } else {
-                leafMethods.add(method);
+                leafMethods.add(element.getKey());
             }
         }
         return leafMethods;
+    }
+
+    public Set<String> findLeafReferences(List<String> specialMethods, int depth) {
+        var modifiedLines = new GitDiffParser(workspaceRoot).parse();
+        return findLeafReferences(modifiedLines, specialMethods, depth);
     }
 
     private void getAllTypeInherits(String className, List<String> inherits) {
