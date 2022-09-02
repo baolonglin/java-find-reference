@@ -215,7 +215,7 @@ class InferConfig {
     }
 
     static String getMvnCommand() {
-        var mvnCommand = "mvn";
+        var mvnCommand = "/usr/local/bin/mvn";
         if (File.separatorChar == '\\') {
             mvnCommand = findExecutableOnPath("mvn.cmd");
             if (mvnCommand == null) {

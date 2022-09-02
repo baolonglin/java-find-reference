@@ -5,6 +5,7 @@ import javax.lang.model.element.TypeElement;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -92,6 +93,29 @@ public class JavaFindReference {
         }
     }
 
+    private Set<String> handleSpecialMethod(String method) {
+    	var className = method.substring(0, method.lastIndexOf("::"));
+        LOG.info(String.format("Handle special method %s add %s", method, className));
+        var impactClasses = new HashSet<String>();
+        impactClasses.add(className);
+        var inherits = new ArrayList<String>();
+        getAllTypeInherits(className, inherits);
+        if (!inherits.isEmpty()) {
+            impactClasses.addAll(inherits);
+        }
+        LOG.info(String.format("Get inherits for %s(%s)", className, inherits));
+        return impactClasses;
+    }
+
+    private String getClassName(String fullMethodName) {
+        var className = fullMethodName.split("::")[0];
+        return className.substring(className.lastIndexOf(".") + 1, className.length());
+    }
+
+    private FilePosition fromLocation(Location location) {
+        return new FilePosition(Paths.get(location.uri), location.range.start.line + 1, location.range.start.character + 1);
+    }
+
     public Set<String> findLeafReferences(List<FilePosition> modifiedLines, List<String> specialMethods, int depth) {
         var leaves = new HashSet<FilePosition>();
         var parsedLocations = new HashSet<Location>();
@@ -102,34 +126,41 @@ public class JavaFindReference {
             if (element.getKey().isEmpty()) {
                 continue;
             }
-            if (!parsedMethod.contains(element.getKey()) && element.getKey().contains("::")) {
-                LOG.info(String.format("Change %s(%d:%d) is owned by %s", line.path.getFileName(), line.line,
-                        line.character, element));
-                parsedMethod.add(element.getKey());
-                findReferencesR(line, leaves, parsedLocations, depth);
+
+            if (element.getValue() == ElementKind.CONSTRUCTOR) {
+                try (var task = compiler().compile(line.path)) {
+                    var methodLocations = new ArrayList<Location>();
+                    for (var root : task.roots) {
+                        new FindAllMethods(task, getClassName(element.getKey())).scan(root, methodLocations);
+                    }
+                    for (var location : methodLocations) {
+                        findReferencesR(fromLocation(location), leaves, parsedLocations, depth);
+                    }
+                }
             } else {
-                LOG.info(String.format("Change %s(%d:%d) is parsed before by %s", line.path.getFileName(), line.line,
-                        line.character, element));
+                if (!parsedMethod.contains(element.getKey()) && element.getKey().contains("::")) {
+                    LOG.info(String.format("Change %s(%d:%d) is owned by %s", line.path.getFileName(), line.line,
+                            line.character, element));
+                    parsedMethod.add(element.getKey());
+                    findReferencesR(line, leaves, parsedLocations, depth);
+                } else {
+                    LOG.info(String.format("Change %s(%d:%d) is parsed before by %s", line.path.getFileName(),
+                            line.line, line.character, element));
+                }
             }
         }
         var leafMethods = new HashSet<String>();
         for (var l : leaves) {
             var element = getMethodLevelElement(l);
-            if (element.getValue() != ElementKind.METHOD) {
-                continue;
+            if (element.getValue() == ElementKind.CONSTRUCTOR) {
+            	leafMethods.addAll(handleSpecialMethod(element.getKey()));
             }
-            if (specialMethods.stream().anyMatch(e -> element.getKey().endsWith(e))) {
-                var className = element.getKey().substring(0, element.getKey().lastIndexOf("::"));
-                LOG.info(String.format("Handle special method %s add %s", element, className));
-                leafMethods.add(className);
-                var inherits = new ArrayList<String>();
-                getAllTypeInherits(className, inherits);
-                if (!inherits.isEmpty()) {
-                    leafMethods.addAll(inherits);
-                }
-                LOG.info(String.format("Get inherits for %s(%s)", className, inherits));
-            } else {
-                leafMethods.add(element.getKey());
+            if (element.getValue() == ElementKind.METHOD) {
+	            if (specialMethods.stream().anyMatch(e -> element.getKey().endsWith(e))) {
+	                leafMethods.addAll(handleSpecialMethod(element.getKey()));
+	            } else {
+	                leafMethods.add(element.getKey());
+	            }
             }
         }
         return leafMethods;

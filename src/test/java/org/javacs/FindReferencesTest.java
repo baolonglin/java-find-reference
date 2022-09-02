@@ -33,28 +33,28 @@ public class FindReferencesTest {
 
     @Test
     public void findAllReferences() {
-        assertThat(items("/org/javacs/example/GotoOther.java", 6, 30), not(empty()));
+        assertThat(items("/main/java/org/javacs/example/GotoOther.java", 6, 30), not(empty()));
     }
 
     @Test
     public void findInterfaceReference() {
-        assertThat(items("/org/javacs/example/GotoImplementation.java", 9, 21), contains("GotoImplementation.java(5)"));
+        assertThat(items("/main/java/org/javacs/example/GotoImplementation.java", 9, 21), contains("GotoImplementation.java(5)"));
     }
 
     @Test
     public void findConstructorReferences() {
-        assertThat(items("/org/javacs/example/ConstructorRefs.java", 4, 10), contains("ConstructorRefs.java(9)"));
+        assertThat(items("/main/java/org/javacs/example/ConstructorRefs.java", 4, 10), contains("ConstructorRefs.java(9)"));
     }
 
     @Test
     public void referenceIndirectImport() {
         assertThat(
-                items("/org/javacs/other/ImportIndirectly.java", 4, 25), contains("ReferenceIndirectImport.java(9)"));
+                items("/main/java/org/javacs/other/ImportIndirectly.java", 4, 25), contains("ReferenceIndirectImport.java(9)"));
     }
 
     @Test
     public void findStackedFieldReferences() {
-        var file = "/org/javacs/example/StackedFieldReferences.java";
+        var file = "/main/java/org/javacs/example/StackedFieldReferences.java";
         assertThat(items(file, 4, 9), contains("StackedFieldReferences.java(7)"));
         assertThat(items(file, 4, 12), contains("StackedFieldReferences.java(8)"));
         assertThat(items(file, 4, 15), contains("StackedFieldReferences.java(9)"));
@@ -62,7 +62,7 @@ public class FindReferencesTest {
 
     @Test
     public void findLeafReferencesDeep1() {
-        var file = "/org/javacs/example/GotoOther.java";
+        var file = "/main/java/org/javacs/example/GotoOther.java";
         assertThat(leaves(file, 4, 26), contains("org.javacs.example.Goto::test"));
         assertThat(leaves(file, 5, 19), contains("org.javacs.example.Goto::test"));
         assertThat(leaves(file, 6, 30), contains("org.javacs.example.Goto::test"));
@@ -74,17 +74,17 @@ public class FindReferencesTest {
         assertThat(leaves(file, 12, 15), contains("org.javacs.example.Goto::test"));
         assertThat(leaves(file, 13, 1), contains("org.javacs.example.Goto::test"));
 
-        file = "/org/javacs/example/GotoImplementation.java";
+        file = "/main/java/org/javacs/example/GotoImplementation.java";
         assertThat(leaves(file, 9, 19), contains("org.javacs.example.GotoImplementation::main"));
 
-        file = "/org/javacs/example/ConstructorRefs.java";
+        file = "/main/java/org/javacs/example/ConstructorRefs.java";
         assertThat(leaves(file, 4, 10), contains("org.javacs.example.ConstructorRefs::main"));
         assertThat(leaves(file, 6, 10), contains("org.javacs.example.ConstructorRefs::main"));
 
-        file = "/org/javacs/other/ImportIndirectly.java";
+        file = "/main/java/org/javacs/other/ImportIndirectly.java";
         assertThat(leaves(file, 4, 25), contains("org.javacs.example.ReferenceIndirectImport::test"));
 
-        file = "/org/javacs/example/StackedFieldReferences.java";
+        file = "/main/java/org/javacs/example/StackedFieldReferences.java";
         assertThat(leaves(file, 4, 9), contains("org.javacs.example.StackedFieldReferences::main"));
         assertThat(leaves(file, 4, 12), contains("org.javacs.example.StackedFieldReferences::main"));
         assertThat(leaves(file, 4, 15), contains("org.javacs.example.StackedFieldReferences::main"));
@@ -93,12 +93,18 @@ public class FindReferencesTest {
 
     @Test
     public void findLeafReferences() {
-        var file = "/org/javacs/example/FindLeaf.java";
+        var file = "/main/java/org/javacs/example/FindLeaf.java";
         assertThat(leaves(file, 24, 13), contains("org.javacs.example.FindLeaf::test1"));
         assertThat(leaves(file, 6, 17), containsInAnyOrder("org.javacs.example.FindLeaf::setUp", "org.javacs.example.FindLeaf::test1"));
 
+        assertThat(leaves(file, 33, 14), containsInAnyOrder("org.javacs.example.FindLeaf::test1",
+                                                            "org.javacs.example.FindLeaf::test2",
+                                                            "org.javacs.example.FindLeaf::setUp",
+                                                            "org.javacs.example.FindLeaf::tearDown",
+                                                            "org.javacs.example.FindLeafInherit"));
 
-        file = "/org/javacs/other/FindLeafHelper.java";
+        file = "/main/java/org/javacs/other/FindLeafHelper.java";
         assertThat(leaves(file, 4, 30), contains("org.javacs.example.FindLeaf::test1"));
+
     }
 }
