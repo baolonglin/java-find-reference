@@ -1,8 +1,10 @@
 package org.javacs;
 
 import com.sun.source.util.Trees;
+import com.sun.tools.javac.code.Symbol;
 
 import javax.lang.model.element.Element;
+import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.Modifier;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -67,6 +69,17 @@ class NavigationHelper {
         }
     }
 
+    public static void findTypeAllImplementations(CompilerProvider compiler, String className, List<String> inherits) {
+        var inheritClasses = findTypeImplementations(compiler, className);
+        for (var c : inheritClasses) {
+            if (inherits.contains(c)) {
+                continue;
+            }
+            inherits.add(c);
+            findTypeAllImplementations(compiler, c, inherits);
+        }
+    }
+
     private static List<String> findImplementations(CompileTask task, String className) {
         var inheritTypes = new ArrayList<String>();
         for (var root : task.roots) {
@@ -91,6 +104,12 @@ class NavigationHelper {
             default -> false;
         };
     }
+
+    static boolean isDefaultConstructor(Element element) {
+        return element.getKind() == ElementKind.CONSTRUCTOR && element instanceof Symbol.MethodSymbol
+                && ((Symbol.MethodSymbol) element).params.isEmpty();
+    }
+
 
     static boolean isType(Element element) {
         return switch (element.getKind()) {

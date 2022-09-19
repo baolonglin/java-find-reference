@@ -10,6 +10,7 @@ import java.util.*;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public class JavaFindReference {
 
@@ -107,11 +108,6 @@ public class JavaFindReference {
         return impactClasses;
     }
 
-    private String getClassName(String fullMethodName) {
-        var className = fullMethodName.split("::")[0];
-        return className.substring(className.lastIndexOf(".") + 1, className.length());
-    }
-
     private FilePosition fromLocation(Location location) {
         return new FilePosition(Paths.get(location.uri), location.range.start.line + 1, location.range.start.character + 1);
     }
@@ -127,34 +123,19 @@ public class JavaFindReference {
                 continue;
             }
 
-            if (element.getValue() == ElementKind.CONSTRUCTOR) {
-                try (var task = compiler().compile(line.path)) {
-                    var methodLocations = new ArrayList<Location>();
-                    for (var root : task.roots) {
-                        new FindAllMethods(task, getClassName(element.getKey())).scan(root, methodLocations);
-                    }
-                    for (var location : methodLocations) {
-                        findReferencesR(fromLocation(location), leaves, parsedLocations, depth);
-                    }
-                }
+            if (!parsedMethod.contains(element.getKey()) && element.getKey().contains("::")) {
+                LOG.info(String.format("Change %s(%d:%d) is owned by %s", line.path.getFileName(), line.line,
+                        line.character, element));
+                parsedMethod.add(element.getKey());
+                findReferencesR(line, leaves, parsedLocations, depth);
             } else {
-                if (!parsedMethod.contains(element.getKey()) && element.getKey().contains("::")) {
-                    LOG.info(String.format("Change %s(%d:%d) is owned by %s", line.path.getFileName(), line.line,
-                            line.character, element));
-                    parsedMethod.add(element.getKey());
-                    findReferencesR(line, leaves, parsedLocations, depth);
-                } else {
-                    LOG.info(String.format("Change %s(%d:%d) is parsed before by %s", line.path.getFileName(),
-                            line.line, line.character, element));
-                }
+                LOG.info(String.format("Change %s(%d:%d) is parsed before by %s", line.path.getFileName(), line.line,
+                        line.character, element));
             }
         }
         var leafMethods = new HashSet<String>();
         for (var l : leaves) {
             var element = getMethodLevelElement(l);
-            if (element.getValue() == ElementKind.CONSTRUCTOR) {
-            	leafMethods.addAll(handleSpecialMethod(element.getKey()));
-            }
             if (element.getValue() == ElementKind.METHOD) {
 	            if (specialMethods.stream().anyMatch(e -> element.getKey().endsWith(e))) {
 	                leafMethods.addAll(handleSpecialMethod(element.getKey()));
@@ -194,17 +175,25 @@ public class JavaFindReference {
         if (depth == 0) {
             return;
         }
+
+        var element = getMethodLevelElement(position);
+        LOG.fine(String.format("Find reference for %s(%d:%d) is owned by %s", position.path.getFileName(), position.line,
+                               position.character, element));
         var locations = findReferences(position).orElse(List.of());
         if (locations.isEmpty()) {
+            LOG.fine(String.format("Not found reference for %s(%d:%d) is owned by %s", position.path.getFileName(), position.line,
+                               position.character, element));
             leaves.add(position);
         } else {
             for (Location l : locations) {
+                var fp = fromLocation(l);
+                LOG.fine(String.format("Found reference for %s(%d:%d)", fp.path.getFileName(), fp.line,
+                        fp.character));
                 if (parsedLocations.contains(l)) {
                     continue;
                 }
                 parsedLocations.add(l);
-                findReferencesR(new FilePosition(Path.of(l.uri), l.range.start.line + 1,
-                        l.range.start.character + 1), leaves, parsedLocations, depth - 1);
+                findReferencesR(fp, leaves, parsedLocations, depth - 1);
             }
         }
     }

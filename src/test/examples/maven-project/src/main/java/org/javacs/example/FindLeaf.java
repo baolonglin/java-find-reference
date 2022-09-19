@@ -34,4 +34,7 @@ public class FindLeaf {
     }
 
     public void test2() {}
+
+    public void test3() {
+    }
 }

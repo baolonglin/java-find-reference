@@ -12,7 +12,8 @@ import java.util.Set;
 import org.junit.Test;
 
 public class FindReferencesTest {
-    private static final JavaFindReference finder = new JavaFindReference(Paths.get("./src/test/examples/maven-project").toAbsolutePath());
+    private static final JavaFindReference finder = new JavaFindReference(
+            Paths.get("./src/test/examples/maven-project").toAbsolutePath());
 
     protected List<String> items(String file, int row, int column) {
         var position = new FilePosition(FindResource.path(file), row, column);
@@ -38,18 +39,20 @@ public class FindReferencesTest {
 
     @Test
     public void findInterfaceReference() {
-        assertThat(items("/main/java/org/javacs/example/GotoImplementation.java", 9, 21), contains("GotoImplementation.java(5)"));
+        assertThat(items("/main/java/org/javacs/example/GotoImplementation.java", 9, 21),
+                contains("GotoImplementation.java(5)"));
     }
 
     @Test
     public void findConstructorReferences() {
-        assertThat(items("/main/java/org/javacs/example/ConstructorRefs.java", 4, 10), contains("ConstructorRefs.java(9)"));
+        assertThat(items("/main/java/org/javacs/example/ConstructorRefs.java", 4, 10),
+                contains("ConstructorRefs.java(9)"));
     }
 
     @Test
     public void referenceIndirectImport() {
-        assertThat(
-                items("/main/java/org/javacs/other/ImportIndirectly.java", 4, 25), contains("ReferenceIndirectImport.java(9)"));
+        assertThat(items("/main/java/org/javacs/other/ImportIndirectly.java", 4, 25),
+                contains("ReferenceIndirectImport.java(9)"));
     }
 
     @Test
@@ -95,16 +98,21 @@ public class FindReferencesTest {
     public void findLeafReferences() {
         var file = "/main/java/org/javacs/example/FindLeaf.java";
         assertThat(leaves(file, 24, 13), contains("org.javacs.example.FindLeaf::test1"));
-        assertThat(leaves(file, 6, 17), containsInAnyOrder("org.javacs.example.FindLeaf::setUp", "org.javacs.example.FindLeaf::test1"));
-
-        assertThat(leaves(file, 33, 14), containsInAnyOrder("org.javacs.example.FindLeaf::test1",
-                                                            "org.javacs.example.FindLeaf::test2",
-                                                            "org.javacs.example.FindLeaf::setUp",
-                                                            "org.javacs.example.FindLeaf::tearDown",
-                                                            "org.javacs.example.FindLeafInherit"));
+        assertThat(leaves(file, 6, 17),
+                containsInAnyOrder("org.javacs.example.FindLeaf::setUp", "org.javacs.example.FindLeaf::test1"));
 
         file = "/main/java/org/javacs/other/FindLeafHelper.java";
         assertThat(leaves(file, 4, 30), contains("org.javacs.example.FindLeaf::test1"));
+    }
 
+    @Test
+    public void findLeafDefaultConstructor() {
+        var file = "/main/java/org/javacs/example/FindLeaf.java";
+        assertThat("leaves mismatch", leaves(file, 33, 14),
+                containsInAnyOrder("org.javacs.example.FindLeaf::test2", "org.javacs.example.UseFindLeaf::test1",
+                                   "org.javacs.example.UseFindLeaf::test2", "org.javacs.example.UseFindLeaf::test3",
+                                   "org.javacs.example.FindLeafInheritNoConstructor::test1", "org.javacs.example.FindLeafInherit::test1",
+                                   "org.javacs.example.FindLeaf::test1"
+                ));
     }
 }

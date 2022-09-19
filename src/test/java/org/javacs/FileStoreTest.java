@@ -22,7 +22,7 @@ public class FileStoreTest {
 
     @Test
     public void packageName() {
-        var file = FindResource.path("/org/javacs/example/Goto.java");
+        var file = FindResource.path("/main/java/org/javacs/example/Goto.java");
         assertThat(FileStore.suggestedPackageName(file), equalTo("org.javacs.example"));
     }
 }

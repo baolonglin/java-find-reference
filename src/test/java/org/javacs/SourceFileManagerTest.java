@@ -18,7 +18,7 @@ public class SourceFileManagerTest {
         return Paths.get("src/test/examples/maven-project").normalize();
     }
 
-    static final Path src = mavenProjectSrc().resolve("src");
+    static final Path src = mavenProjectSrc().resolve("src/main/java");
     static final Path classes = mavenProjectSrc().resolve("target/classes");
     final SourceFileManager sourceFileManager = createSourceFileManager();
     final StandardJavaFileManager standardFileManager = createDelegateFileManager();

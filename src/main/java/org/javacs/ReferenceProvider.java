@@ -47,6 +47,12 @@ public class ReferenceProvider {
                 task.close();
                 return findTypeReferences(className);
             }
+            if (NavigationHelper.isDefaultConstructor(element)) {
+                var parentClass = (TypeElement) element.getEnclosingElement();
+                var className = parentClass.getQualifiedName().toString();
+                task.close();
+                return findDefaultConstructorReferences(className);
+            }
             if (NavigationHelper.isMember(element)) {
                 var parentClass = (TypeElement) element.getEnclosingElement();
                 var className = parentClass.getQualifiedName().toString();
@@ -59,6 +65,32 @@ public class ReferenceProvider {
             }
             return NOT_SUPPORTED;
         }
+    }
+
+    private List<Location> findDefaultConstructorReferences(String className) {
+        var implementations = new ArrayList<String>();
+        implementations.add(className);
+        NavigationHelper.findTypeAllImplementations(compiler, className, implementations);
+
+        var locations = new ArrayList<Location>();
+        for (var implementation : implementations ) {
+            var files = compiler.findTypeReferences(implementation);
+            if (files.length == 0) {
+                continue;
+            }
+            try (var task = compiler.compile(files)) {
+                var paths = new ArrayList<TreePath>();
+                for (var root : task.roots) {
+                    new FindNewClassWithDefaultConstructor(task.task, implementation).scan(root, paths);
+                    new FindAllPublicMethods(implementation).scan(root, paths);
+                }
+                for (var p : paths) {
+                    locations.add(FindHelper.location(task, p));
+                }
+            }
+        }
+
+        return locations;
     }
 
     private List<Location> findTypeReferences(String className) {
