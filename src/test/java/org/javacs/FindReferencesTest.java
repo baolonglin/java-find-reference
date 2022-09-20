@@ -95,24 +95,46 @@ public class FindReferencesTest {
     }
 
     @Test
-    public void findLeafReferences() {
-        var file = "/main/java/org/javacs/example/FindLeaf.java";
-        assertThat(leaves(file, 24, 13), contains("org.javacs.example.FindLeaf::test1"));
-        assertThat(leaves(file, 6, 17),
-                containsInAnyOrder("org.javacs.example.FindLeaf::setUp", "org.javacs.example.FindLeaf::test1"));
+    public void findLeafInsideClass() {
+        var file = "/main/java/org/javacs/example/FindLeafInsideClass.java";
+        // change inside provate method
+        assertThat(leaves(file, 15, 13), contains("org.javacs.example.FindLeafInsideClass::test1"));
 
-        file = "/main/java/org/javacs/other/FindLeafHelper.java";
-        assertThat(leaves(file, 4, 30), contains("org.javacs.example.FindLeaf::test1"));
+        // change data member
+        assertThat(leaves(file, 4, 17), containsInAnyOrder("org.javacs.example.FindLeafInsideClass::test1",
+                "org.javacs.example.FindLeafInsideClass::test2"));
+
+        // change inside public method without caller
+        assertThat(leaves(file, 7, 13), contains("org.javacs.example.FindLeafInsideClass::test1"));
+
+        // change inside default constructor without caller/derived class
+        assertThat(leaves(file, 23, 0), containsInAnyOrder("org.javacs.example.FindLeafInsideClass::test1",
+                "org.javacs.example.FindLeafInsideClass::test2"));
+    }
+
+    @Test
+    public void findLeafHelperChanged() {
+        var file = "/main/java/org/javacs/other/FindLeafHelper.java";
+
+        // change static final data
+        assertThat(leaves(file, 4, 30), contains("org.javacs.example.FindLeafUseHelper::test1"));
+
+        // change method
+        assertThat(leaves(file, 13, 8), contains("org.javacs.example.FindLeafUseHelper::test1"));
     }
 
     @Test
     public void findLeafDefaultConstructor() {
-        var file = "/main/java/org/javacs/example/FindLeaf.java";
-        assertThat("leaves mismatch", leaves(file, 33, 14),
-                containsInAnyOrder("org.javacs.example.FindLeaf::test2", "org.javacs.example.UseFindLeaf::test1",
-                                   "org.javacs.example.UseFindLeaf::test2", "org.javacs.example.UseFindLeaf::test3",
-                                   "org.javacs.example.FindLeafInheritNoConstructor::test1", "org.javacs.example.FindLeafInherit::test1",
-                                   "org.javacs.example.FindLeaf::test1"
+        var file = "/main/java/org/javacs/example/FindLeafBase.java";
+
+        // change in base default constructor
+        assertThat(leaves(file, 5, 14),
+                   containsInAnyOrder("org.javacs.example.FindLeafBase::test1",
+                                      "org.javacs.example.UseFindLeaf::test1",
+                                      "org.javacs.example.UseFindLeaf::test2",
+                                      "org.javacs.example.UseFindLeaf::test3",
+                                      "org.javacs.example.FindLeafOverridingDefaultConstructor::test1",
+                                      "org.javacs.example.FindLeafInheritedDefaultConstructor::test1"
                 ));
     }
 }

@@ -14,11 +14,6 @@ public class FindLeafHelper {
             internalMethod3();
         }
     }
-
     private void internalMethod2() {}
-
     private void internalMethod3() {}
-
-    public FindLeafHelper() {}
-
 }
