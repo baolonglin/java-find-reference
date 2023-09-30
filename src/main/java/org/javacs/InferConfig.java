@@ -221,7 +221,10 @@ class InferConfig {
             if (mvnCommand == null) {
                 mvnCommand = findExecutableOnPath("mvn.bat");
             }
+        } else {
+            mvnCommand = findExecutableOnPath("mvn");
         }
+
         return mvnCommand;
     }
 

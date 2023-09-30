@@ -1,5 +1,6 @@
 package org.javacs;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -19,6 +20,8 @@ public class MainArgs {
     public List<String> specialMethods = new ArrayList<String>();
     public String outputJsonFile = "";
     public int depth = -1;
+    public FilePosition position = null;
+    public String grepOutput = "";
 
     private Options options = new Options();
 
@@ -45,12 +48,19 @@ public class MainArgs {
         Option searchDepth = Option.builder("searchDepth").argName("depth").hasArg().desc(
                 "Search reference depth. 0: don't find reference just care about the function contains the change, -1 search the code until highest layer.")
                 .build();
-
+        Option position = Option.builder("filePosition").argName("position").hasArg()
+                .desc("Specified file position manually, with format 'full file path:line number:column number'.")
+                .build();
+        Option grep = Option.builder("grepOutput").argName("grepout").hasArg()
+                .desc("Specified file which contains the grep output with format 'full file path:line number:column number:xxxxx'.")
+                .build();
         options.addOption(help);
         options.addOption(workspace);
         options.addOption(specialMethods);
         options.addOption(outputJsonFile);
         options.addOption(searchDepth);
+        options.addOption(position);
+        options.addOption(grep);
     }
 
     private void parse(String[] args) {
@@ -71,6 +81,33 @@ public class MainArgs {
             }
             if(line.hasOption("searchDepth")) {
                 this.depth = Integer.parseInt(line.getOptionValue("searchDepth"));
+            }
+            if(line.hasOption("grepOutput")) {
+                this.grepOutput = line.getOptionValue("grepOutput");
+            }
+            if(line.hasOption("filePosition")) {
+                var filePosition = line.getOptionValue("filePosition");
+                var tokens = filePosition.split(":");
+                if (tokens.length != 3) {
+                    throw new ParseException("Invalid file position format");
+                }
+                var lineNum = 0;
+                try {
+                    lineNum = Integer.parseInt(tokens[1]);
+                } catch (NumberFormatException e) {
+                    throw new ParseException("Invalid file line");
+                }
+                var columnNum = 1;
+                try {
+                    columnNum = Integer.parseInt(tokens[2]);
+                } catch (NumberFormatException e) {
+                    throw new ParseException("Invalid file column");
+                }
+                var file = new File(tokens[0]);
+                if(!file.exists()) {
+                    throw new ParseException("Could not find file");
+                }
+                this.position = new FilePosition(file.toPath(), lineNum, columnNum);
             }
         }
         catch (ParseException exp) {

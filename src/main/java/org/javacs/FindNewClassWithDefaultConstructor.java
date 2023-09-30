@@ -1,5 +1,6 @@
 package org.javacs;
 
+import com.sun.source.tree.ClassTree;
 import com.sun.source.tree.NewClassTree;
 import com.sun.source.tree.ImportTree;
 import com.sun.source.tree.PackageTree;
@@ -25,7 +26,10 @@ class FindNewClassWithDefaultConstructor extends TreePathScanner<Void, List<Tree
 
     @Override
     public Void visitPackage(PackageTree t, List<TreePath> list) {
-        if (t.getPackageName().toString().equals(getPackageName())) {
+
+        if (t.getPackageName().toString().equals(getPackageName())
+            // parsed class can be inner class or class in the same package
+            || getPackageName().startsWith(t.getPackageName().toString() + ".")) {
             imported = true;
         }
         return super.visitPackage(t, list);
@@ -43,7 +47,8 @@ class FindNewClassWithDefaultConstructor extends TreePathScanner<Void, List<Tree
 
     @Override
     public Void visitNewClass(NewClassTree t, List<TreePath> list) {
-        if (t.getArguments().isEmpty() && imported && className.endsWith("." + t.getIdentifier().toString())) {
+        if ((t.getArguments().isEmpty() && imported && className.endsWith("." + t.getIdentifier().toString()))
+                || className.equals(t.getIdentifier().toString())) {
             list.add(getCurrentPath());
         }
 

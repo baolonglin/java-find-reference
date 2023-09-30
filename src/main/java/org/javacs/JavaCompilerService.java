@@ -95,7 +95,7 @@ class JavaCompilerService implements CompilerProvider {
         if (needsCompile(sources)) {
             loadCompile(sources);
         } else {
-            LOG.info("...using cached compile");
+            LOG.fine("...using cached compile");
         }
         return cachedCompile;
     }

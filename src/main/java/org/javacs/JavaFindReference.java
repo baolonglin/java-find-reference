@@ -19,6 +19,8 @@ public class JavaFindReference {
     private Path workspaceRoot;
     private boolean modifiedBuild = true;
     private JavaCompilerService cacheCompiler;
+    private Map<String, JavaCompilerService> specialCacheCompiler = new HashMap<>();
+    public final Set<String> specialMethods = new HashSet<>(Arrays.asList("configure", "setup", "setUp", "tearDown"));
 
     JavaCompilerService compiler() {
         if (modifiedBuild) {
@@ -26,6 +28,17 @@ public class JavaFindReference {
             modifiedBuild = false;
         }
         return cacheCompiler;
+    }
+
+    public Optional<JavaCompilerService> compiler(String methodName) {
+        if (specialMethods.contains(methodName)) {
+            if (!specialCacheCompiler.containsKey(methodName)) {
+                var compiler = createCompiler();
+                specialCacheCompiler.put(methodName, compiler);
+            }
+            return Optional.of(specialCacheCompiler.get(methodName));
+        }
+        return Optional.empty();
     }
 
     public JavaFindReference(Path rootDir) {
@@ -43,7 +56,7 @@ public class JavaFindReference {
         if (!isJavaFile(position.path)) {
             return Optional.empty();
         }
-        var found = new ReferenceProvider(compiler(), position.path, position.line,
+        var found = new ReferenceProvider(this, position.path, position.line,
                 position.character).findImplementations();
         if (found.isEmpty()) {
             return Optional.empty();
@@ -55,7 +68,7 @@ public class JavaFindReference {
         if (!isJavaFile(position.path)) {
             return Optional.empty();
         }
-        var found = new ReferenceProvider(compiler(), position.path, position.line,
+        var found = new ReferenceProvider(this, position.path, position.line,
                 position.character).find();
         if (found == ReferenceProvider.NOT_SUPPORTED) {
             return Optional.empty();

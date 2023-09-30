@@ -131,6 +131,13 @@ public class FindHelper {
             start = FindHelper.findNameIn(path.getCompilationUnit(), name, start, end);
             end = start + name.length();
         }
+        // For class that use new to create and implement in the same place
+        // code like new ABC() { public void xxx() {} }
+        //                    ^                        ^
+        //           start here, but end is -1      end should be here
+        if (end == -1) {
+            end = start + 1;
+        }
         var startLine = (int) lines.getLineNumber(start);
         var startColumn = (int) lines.getColumnNumber(start);
         var startPos = new Position(startLine - 1, startColumn - 1);
